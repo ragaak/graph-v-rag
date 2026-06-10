@@ -5,7 +5,7 @@ from typing import Iterator, Optional
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from .config import get_settings
+from ..config import get_settings
 
 
 def chunk_text(

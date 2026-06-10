@@ -6,11 +6,11 @@ from pathlib import Path
 
 import requests
 
-from .config import get_settings
-from .qdrant_store import QdrantStore
-from .neo4j_store import Neo4jStore
-from .parent_store import ParentStore
-from .extract import generate_cypher_for_query
+from ..config import get_settings
+from ..storage.qdrant_store import QdrantStore
+from ..storage.neo4j_store import Neo4jStore
+from ..storage.parent_store import ParentStore
+from ..reasoning.extract import generate_cypher_for_query
 
 
 # Global parent store for parent lookup
@@ -193,9 +193,9 @@ def answer_query(
 
     # Step 3: Synthesize answer using full context
     print("🤖 [Brain] Synthesizing answer...")
-    print("CONTEXT SENT TO LLM:")
-    for i, ctx in enumerate(all_context[:3]):
-        print(f"[{i+1}] {ctx}")
+    # print("DEBUG: CONTEXT SENT TO LLM:")
+    # for i, ctx in enumerate(all_context[:3]):
+    #     print(f"[{i+1}] {ctx}")
     print()
 
     merged_context = "\n\n".join(all_context[:5])
@@ -215,19 +215,12 @@ def answer_query(
                 n_before=2,
                 n_after=2,
             )
-            print(f"🔍 Expanding parent {parent_id[:8]} found {len(neighbors)} neighbors")
+            # Expand from top-matched parents to ±2 neighbors
             for i, n_text in enumerate(neighbors):
-                # Check if this contains pipeline content
-                has_pipeline = 'Dataset Collection' in n_text and 'Evidence Extraction' in n_text
-                print(f"  [{i}] Pipeline content: {has_pipeline}")
                 expanded_contexts.append(f"[Neighbor context] {n_text[:800]}")
 
         if expanded_contexts:
             print(f"📖 [Brain] Added {len(expanded_contexts)} neighboring parent chunks")
-            print("DEBUG: Looking for pipeline content in expanded context:")
-            for ctx in expanded_contexts[:3]:  # Check first 3
-                has_pipeline = 'Dataset Collection' in ctx and 'Evidence Extraction' in ctx
-                print(f"  {has_pipeline} - {ctx[:100]}")
             # Combine original context with expanded
             full_context = "\n\n".join(all_context[:5]) + "\n\n" + "\n\n".join(expanded_contexts)
             answer = synthesize_answer(question, full_context, settings)

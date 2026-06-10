@@ -5,9 +5,9 @@ import re
 
 import requests
 
-from .config import get_settings
-from .cypher_safety import sanitize_identifier
-from .neo4j_store import Neo4jStore
+from ..config import get_settings
+from ..reasoning.cypher_safety import sanitize_identifier
+from ..storage.neo4j_store import Neo4jStore
 
 
 def load_schema(path: str) -> dict:
@@ -200,7 +200,7 @@ def generate_cypher_for_query(question: str, context: str, maxlen: int = 800) ->
     Returns:
         Cypher query string or None
     """
-    from .cypher_generator import get_graph_brain
+    from ..reasoning.cypher_generator import get_graph_brain
 
     # Truncate context if needed
     if len(context) > maxlen:

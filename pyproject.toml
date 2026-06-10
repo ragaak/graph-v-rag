@@ -46,8 +46,7 @@ dev = [
 graph_vlm_rag = "graph_vlm_rag.__main__:main"
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["graph_vlm_rag*"]
+where = ["src"]
 
 [tool.ruff]
 line-length = 100

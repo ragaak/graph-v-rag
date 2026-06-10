@@ -26,7 +26,7 @@ ollama pull :14b
 ollama pull :latest
 ollama pull nomic-embed-text:latest
 
-# 3. Install the package
+# 3. Install the package (src layout)
 pip install -e .
 
 # 4. Ingest a document
@@ -65,6 +65,22 @@ python3 -m graph_vlm_rag query "What are the training stages?" --document sample
 
 # Retrieve more context blocks
 python3 -m graph_vlm_rag query "Explain the architecture" --max-results 10
+```
+
+### Clear Stores
+
+```bash
+# Clear everything (default if no flags)
+python3 -m graph_vlm_rag clear
+
+# Selective clearing
+python3 -m graph_vlm_rag clear --qdrant     # Only Qdrant
+python3 -m graph_vlm_rag clear --neo4j      # Only Neo4j
+python3 -m graph_vlm_rag clear --parents    # Only parents.json
+python3 -m graph_vlm_rag clear --all        # Explicit all
+
+# Combine flags
+python3 -m graph_vlm_rag clear --qdrant --neo4j
 ```
 
 ### Evaluate
@@ -115,42 +131,68 @@ python3 -m graph_vlm_rag eval --questions-file data/eval_questions.json
 
 ## Project Structure
 
+The project uses the **`src/` layout** (PEP 517 standard):
+
 ```
 graph_vlm_rag/
-├── DESIGN.md              # Design document
-├── docker-compose.yml     # Docling + Neo4j + Qdrant
-├── pyproject.toml         # Dependencies + entry points
-├── .env.example           # Configuration template
+├── README.md                    # This file
+├── DESIGN.md                    # Detailed design document
+├── pyproject.toml               # Dependencies + entry points
+├── docker-compose.yml           # Docling + Neo4j + Qdrant
+├── .env.example                 # Configuration template
+├── .gitignore
 │
-├── graph_vlm_rag/         # Python package
-│   ├── config.py          # Settings (env-driven)
-│   ├── docling.py         # PDF parser + Docling chunker
-│   ├── vision_enrich.py   # VLM image description
-│   ├── eye.py             # Combined Eye layer
-│   ├── chunker.py         # Layout-aware parent + child chunks
-│   ├── qdrant_store.py    # Hybrid vector store (dense + BM25 + RRF)
-│   ├── neo4j_store.py     # Graph store
-│   ├── parent_store.py    # Parent text lookup
-│   ├── cypher_safety.py   # Read-only Cypher validator
-│   ├── cypher_generator.py # DSPy Cypher generation
-│   ├── extract.py         # LLM entity extraction
-│   ├── query.py           # Hybrid retrieval + adaptive expansion
-│   ├── ingest.py          # CLI: ingest orchestration
-│   ├── eval.py            # CLI: eval
-│   └── types.py           # Pydantic types
+├── src/
+│   └── graph_vlm_rag/           # Main package
+│       ├── __init__.py
+│       ├── __main__.py          # CLI entry: python -m graph_vlm_rag
+│       ├── config.py            # Settings (env-driven)
+│       │
+│       ├── ingestion/           # Eye layer
+│       │   ├── __init__.py
+│       │   ├── docling.py       # PDF parser + Docling HybridChunker
+│       │   ├── eye.py           # Combined ingestion orchestration
+│       │   └── vision_enrich.py # VLM image description
+│       │
+│       ├── storage/             # Memory layer
+│       │   ├── __init__.py
+│       │   ├── chunker.py       # Layout-aware parents + LangChain children
+│       │   ├── qdrant_store.py  # Hybrid vector store (dense + BM25 + RRF)
+│       │   ├── neo4j_store.py   # Graph store (entities + relationships)
+│       │   └── parent_store.py  # JSON-backed parent text lookup
+│       │
+│       ├── reasoning/           # Brain layer
+│       │   ├── __init__.py
+│       │   ├── cypher_generator.py  # DSPy Cypher generation
+│       │   ├── cypher_safety.py     # Read-only Cypher validator
+│       │   └── extract.py           # LLM entity extraction
+│       │
+│       ├── cli/                 # CLI command implementations
+│       │   ├── __init__.py
+│       │   ├── ingest.py
+│       │   ├── query.py
+│       │   └── eval.py
+│       │
+│       └── utils/
+│           ├── __init__.py
+│           └── types.py         # Pydantic types
+│
+├── tests/                       # Unit tests
+│   ├── __init__.py
+│   └── test_config.py
 │
 ├── data/
-│   ├── domain_schema.yaml # Research-paper schema
-│   ├── eval_questions.json # Hand-written Q&A
-│   ├── raw_pdfs/          # Source PDFs
-│   ├── processed/         # Cached reasoned.md
-│   └── parents.json       # Parent text lookup
+│   ├── domain_schema.yaml       # Research-paper schema
+│   ├── eval_questions.json      # Hand-written Q&A
+│   ├── raw_pdfs/                # Source PDFs
+│   ├── processed/               # Cached reasoned.md (regenerable)
+│   └── parents.json             # Parent text lookup (regenerable)
 │
 ├── assets/
-│   └── sample.pdf         # Test document
+│   └── sample.pdf               # Test document
 │
 └── scripts/
-    └── run_demo.sh        # One-shot demo
+    └── run_demo.sh              # One-shot demo
 ```
 
 ---
@@ -218,6 +260,42 @@ Ingest and query across multiple documents:
 - Qdrant supports metadata filtering by document
 - Neo4j entities use `MERGE` to avoid duplicates across documents
 - Pass `--clear` to reset, or omit it to append
+
+### Store Management
+
+Use the `clear` command to selectively wipe data:
+
+```bash
+python3 -m graph_vlm_rag clear --qdrant     # Wipe vector store only
+python3 -m graph_vlm_rag clear --neo4j      # Wipe graph only
+python3 -m graph_vlm_rag clear --parents    # Wipe parent lookup only
+python3 -m graph_vlm_rag clear --all        # Wipe everything
+```
+
+---
+
+## Development
+
+### Running Tests
+
+```bash
+python3 -m pytest tests/ -v
+```
+
+### Code Style
+
+The project uses `ruff` for linting:
+
+```bash
+ruff check src/ tests/
+```
+
+### Package Layout
+
+This project uses the **`src/` layout** for several benefits:
+- Prevents accidental imports from the project root
+- Ensures tests run against the installed package, not local files
+- Industry standard for Python projects (PEP 517)
 
 ---
 

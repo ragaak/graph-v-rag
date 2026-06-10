@@ -12,8 +12,8 @@ from qdrant_client.http.models import (
     PointStruct,
 )
 
-from .config import get_settings
-from .chunker import resolve_parent_text
+from ..config import get_settings
+from ..storage.chunker import resolve_parent_text
 
 
 # Ollama embedding endpoint (using nomic-embed-text)

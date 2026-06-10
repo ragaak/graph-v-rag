@@ -3,13 +3,13 @@
 import os
 from pathlib import Path
 
-from .eye import process_pdf
-from .chunker import chunk_text
-from .docling import docling_chunk_pdf
-from .qdrant_store import QdrantStore
-from .neo4j_store import Neo4jStore
-from .parent_store import ParentStore
-from .extract import extract_from_chunks
+from ..ingestion.eye import process_pdf
+from ..storage.chunker import chunk_text
+from ..ingestion.docling import docling_chunk_pdf
+from ..storage.qdrant_store import QdrantStore
+from ..storage.neo4j_store import Neo4jStore
+from ..storage.parent_store import ParentStore
+from ..reasoning.extract import extract_from_chunks
 
 
 def ingest_pdf(pdf_path: str, clear: bool = False) -> dict:
@@ -54,6 +54,8 @@ def ingest_pdf(pdf_path: str, clear: bool = False) -> dict:
     # Step 3: Memory - Store parents in ParentStore (for lookup)
     print("📄 [Memory] Storing parents for lookup...")
     pstore = ParentStore()
+    if clear:
+        pstore.clear()  # Clear stale parents from previous ingests
     parent_chunks = [c for c in chunks if c["chunk_type"] == "parent"]
     added = pstore.add_parents(parent_chunks)
     print(f"✅ [Memory] Stored {added} parents to {pstore.storage_path}")

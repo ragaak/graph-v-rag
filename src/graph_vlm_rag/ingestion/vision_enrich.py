@@ -7,7 +7,7 @@ from typing import Tuple
 
 import requests
 
-from .config import get_settings
+from ..config import get_settings
 
 
 def enrich_images(markdown: str, output_path: str | None = None) -> Tuple[str, int]:

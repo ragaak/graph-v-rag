@@ -5,8 +5,8 @@ from typing import Iterator
 
 from neo4j import GraphDatabase
 
-from .config import get_settings
-from .cypher_safety import sanitize_identifier
+from ..config import get_settings
+from ..reasoning.cypher_safety import sanitize_identifier
 
 
 class Neo4jStore:
@@ -63,7 +63,7 @@ class Neo4jStore:
             print("📭 No entities to upsert")
             return 0
 
-        from .cypher_safety import sanitize_identifier
+        from ..reasoning.cypher_safety import sanitize_identifier
 
         with self.driver.session() as session:
             for entity in entities:
@@ -95,7 +95,7 @@ class Neo4jStore:
             print("📭 No relationships to upsert")
             return 0
 
-        from .cypher_safety import sanitize_identifier
+        from ..reasoning.cypher_safety import sanitize_identifier
 
         with self.driver.session() as session:
             for rel in relationships:
@@ -180,7 +180,7 @@ class Neo4jStore:
         Returns:
             True if successful
         """
-        from .cypher_safety import sanitize_identifier
+        from ..reasoning.cypher_safety import sanitize_identifier
 
         rel_type = sanitize_identifier(rel_type.upper())
 
@@ -223,7 +223,7 @@ class Neo4jStore:
         Returns:
             List of result records
         """
-        from .cypher_safety import validate_cypher
+        from ..reasoning.cypher_safety import validate_cypher
 
         # Validate first
         is_valid, error = validate_cypher(cypher)

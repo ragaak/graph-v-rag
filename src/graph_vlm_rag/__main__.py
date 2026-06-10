@@ -59,6 +59,29 @@ def main():
         help="Path to evaluation questions (default: data/eval_questions.json)",
     )
 
+    # Clear command
+    clear_parser = subparsers.add_parser("clear", help="Clear stored data")
+    clear_parser.add_argument(
+        "--qdrant",
+        action="store_true",
+        help="Clear Qdrant vector store",
+    )
+    clear_parser.add_argument(
+        "--neo4j",
+        action="store_true",
+        help="Clear Neo4j graph store",
+    )
+    clear_parser.add_argument(
+        "--parents",
+        action="store_true",
+        help="Clear parents.json file",
+    )
+    clear_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Clear all stores (Qdrant + Neo4j + parents.json)",
+    )
+
     args = parser.parse_args()
 
     if args.version:
@@ -72,7 +95,7 @@ def main():
 
     # Dispatch commands
     if args.command == "ingest":
-        from .ingest import ingest_pdf
+        from .cli.ingest import ingest_pdf
         try:
             result = ingest_pdf(args.pdf_path, clear=args.clear)
             print(f"✅ Ingested: {result}")
@@ -82,7 +105,7 @@ def main():
             return 1
 
     elif args.command == "query":
-        from .query import answer_query
+        from .cli.query import answer_query
         try:
             result = answer_query(
                 args.question,
@@ -96,7 +119,7 @@ def main():
             return 1
 
     elif args.command == "eval":
-        from .eval import run_evaluation
+        from .cli.eval import run_evaluation
         try:
             report = run_evaluation(args.questions_file)
             print(report)
@@ -104,6 +127,33 @@ def main():
         except Exception as e:
             print(f"❌ Failed to run evaluation: {e}")
             return 1
+
+    elif args.command == "clear":
+        # If --all or no specific flag, clear everything
+        clear_all = args.all or not (args.qdrant or args.neo4j or args.parents)
+        from .storage.qdrant_store import QdrantStore
+        from .storage.neo4j_store import Neo4jStore
+        from .storage.parent_store import ParentStore
+
+        if clear_all or args.qdrant:
+            try:
+                QdrantStore().clear()
+            except Exception as e:
+                print(f"⚠️  Qdrant clear failed: {e}")
+        if clear_all or args.neo4j:
+            try:
+                nstore = Neo4jStore()
+                nstore.clear_all()
+                nstore.close()
+            except Exception as e:
+                print(f"⚠️  Neo4j clear failed: {e}")
+        if clear_all or args.parents:
+            try:
+                ParentStore().clear()
+            except Exception as e:
+                print(f"⚠️  Parents clear failed: {e}")
+        print("🗑️  Clear complete")
+        return 0
 
     return 1
 

@@ -10,7 +10,7 @@ from typing import Any, Iterator, Tuple
 
 import requests
 
-from .config import get_settings
+from ..config import get_settings
 
 
 def parse_pdf(pdf_path: str, output_dir: str = "data/processed") -> Tuple[str, str]:

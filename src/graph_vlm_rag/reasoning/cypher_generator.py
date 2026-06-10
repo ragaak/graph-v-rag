@@ -10,9 +10,9 @@ from typing import Any, Dict, List, Optional
 import dspy
 from dspy import InputField, OutputField, Signature
 
-from .config import get_settings
-from .neo4j_store import Neo4jStore
-from .cypher_safety import validate_cypher
+from ..config import get_settings
+from ..storage.neo4j_store import Neo4jStore
+from ..reasoning.cypher_safety import validate_cypher
 
 
 # ---------------------------------------------------------------------------
@@ -225,27 +225,24 @@ class GraphBrain(dspy.Module):
         self,
         question: str,
         schema: Optional[str] = None,
-    ) -> str:
+    ):
         """
-        Generate a clean Cypher query for the question.
+        DSPy forward hook: Run the predictor and return the prediction.
 
         Args:
             question: User's natural language question
             schema: Optional override for the schema string
 
         Returns:
-            Sanitized, valid Cypher query string
+            DSPy prediction with cypher_query field
         """
         schema_str = schema or self._format_schema()
 
         # Use the DSPy predictor to enforce structured output
-        prediction = self._predictor(
+        return self._predictor(
             db_schema=schema_str,
             question=question,
         )
-        raw_cypher = prediction.cypher_query
-
-        return _clean_cypher(raw_cypher)
 
     def generate(self, question: str) -> str:
         """
@@ -258,7 +255,11 @@ class GraphBrain(dspy.Module):
             Clean Cypher string (or empty string on failure)
         """
         try:
-            return self.forward(question=question)
+            # Use self() (i.e., __call__) instead of self.forward() to avoid DSPy warning
+            # __call__ handles tracing/telemetry; forward() is the internal hook
+            prediction = self(question=question)
+            raw_cypher = prediction.cypher_query
+            return _clean_cypher(raw_cypher)
         except Exception as exc:
             print(f"⚠️ Cypher generation failed: {exc}")
             return ""
