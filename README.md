@@ -137,6 +137,7 @@ The project uses the **`src/` layout** (PEP 517 standard):
 graph_vlm_rag/
 ├── README.md                    # This file
 ├── DESIGN.md                    # Detailed design document
+├── USECASES.md                  # Real-world applications
 ├── pyproject.toml               # Dependencies + entry points
 ├── docker-compose.yml           # Docling + Neo4j + Qdrant
 ├── .env.example                 # Configuration template
@@ -332,5 +333,6 @@ The schema is loaded at ingest time and passed to the LLM as allowed labels/type
 ## See Also
 
 - `DESIGN.md` — detailed architecture decisions
+- `USECASES.md` — real-world applications and use cases
 - `data/eval_questions.json` — current eval suite
 - `data/domain_schema.yaml` — current domain schema

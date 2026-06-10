@@ -1,7 +1,7 @@
 # graph_vlm_rag — Design Document
 
 **Project:** Multi-Modal Hybrid GraphRAG Pipeline  
-**Status:** Active Development (v1.1)  
+**Status:** Active Development (v1.2)  
 **Date:** 2026-06-10  
 **Owner:** Aakash Raghav
 
@@ -36,6 +36,7 @@ The system is organized into three layers:
 │  USER                                                              │
 │  $ graph_vlm_rag ingest sample.pdf --clear                          │
 │  $ graph_vlm_rag query "How do X depend on Y?" --document sample    │
+│  $ graph_vlm_rag clear --qdrant --neo4j                             │
 └──────────────────────────┬──────────────────────────────────────────┘
                            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -156,43 +157,57 @@ The system is organized into three layers:
 
 ## 4. Directory Layout
 
+The project uses the **`src/` layout** (PEP 517 standard):
+
 ```
 graph_vlm_rag/
 ├── DESIGN.md                    # This file
 ├── README.md                    # Lead with Eye/Memory/Brain framing
-├── pyproject.toml               # deps: requests, qdrant-client, neo4j, dspy, fastembed, langchain-text-splitters, pypdf, httpx
+├── USECASES.md                  # Real-world applications
+├── pyproject.toml               # deps + entry points (src layout)
 ├── docker-compose.yml           # docling-serve + neo4j + qdrant
-├── .env.example                 # NEO4J_PASSWORD, OLLAMA_MODEL, OLLAMA_VL_MODEL, DOCLING_URL, QDRANT_URL, NEO4J_URL
+├── .env.example                 # Configuration template
+├── .gitignore
 │
-├── graph_vlm_rag/              # Python package
+├── src/
+│   └── graph_vlm_rag/           # Main package
+│       ├── __init__.py
+│       ├── __main__.py          # CLI entry: dispatch table
+│       ├── config.py            # Settings from env vars
+│       │
+│       ├── ingestion/           # Eye layer
+│       │   ├── __init__.py
+│       │   ├── docling.py       # PDF → Markdown + Docling HybridChunker
+│       │   ├── eye.py           # Combined ingestion orchestration
+│       │   └── vision_enrich.py # VLM image description
+│       │
+│       ├── storage/             # Memory layer
+│       │   ├── __init__.py
+│       │   ├── chunker.py       # Layout-aware parents + LangChain children
+│       │   ├── qdrant_store.py  # Hybrid vector store (dense + BM25 + RRF)
+│       │   ├── neo4j_store.py   # Graph store (entities + relationships)
+│       │   └── parent_store.py  # JSON-backed parent text lookup
+│       │
+│       ├── reasoning/           # Brain layer
+│       │   ├── __init__.py
+│       │   ├── cypher_generator.py  # DSPy Cypher generation
+│       │   ├── cypher_safety.py     # Read-only validator
+│       │   └── extract.py           # LLM entity extraction
+│       │
+│       ├── cli/                 # CLI command implementations
+│       │   ├── __init__.py
+│       │   ├── ingest.py        # python -m graph_vlm_rag ingest <pdf> [--clear]
+│       │   ├── query.py         # python -m graph_vlm_rag query "..." [--document X]
+│       │   └── eval.py          # python -m graph_vlm_rag eval
+│       │                        # Note: `clear` command is dispatched in __main__.py
+│       │
+│       └── utils/
+│           ├── __init__.py
+│           └── types.py         # Pydantic types
+│
+├── tests/                       # Unit tests (mirrors src/ structure)
 │   ├── __init__.py
-│   ├── __main__.py             # CLI entry: python -m graph_vlm_rag <cmd>
-│   ├── config.py              # Settings from env vars (single source of truth)
-│   │
-│   │   # CLI commands
-│   │   ├── ingest.py          # python -m graph_vlm_rag ingest <pdf> [--clear]
-│   │   ├── query.py          # python -m graph_vlm_rag query "..." [--document X] [--max-results N]
-│   │   └── eval.py           # python -m graph_vlm_rag eval
-│   │
-│   │   # Eye (Ingestion)
-│   │   ├── docling.py        # PDF → Markdown + Docling HybridChunker
-│   │   ├── vision_enrich.py # Inline image summaries via Ollama VLM
-│   │   └── eye.py            # Combined Eye layer orchestration
-│   │
-│   │   # Memory (Persistence)
-│   │   ├── chunker.py        # Layout-aware parents + LangChain children
-│   │   ├── qdrant_store.py   # Hybrid vector store (dense + BM25 + RRF)
-│   │   ├── neo4j_store.py   # Entities/edges → Neo4j (MERGE for dedup)
-│   │   ├── parent_store.py  # JSON-backed parent text lookup
-│   │   └── cypher_safety.py # Read-only whitelist validator
-│   │
-│   │   # Brain (Reasoning)
-│   │   ├── cypher_generator.py # DSPy Cypher generation with live schema
-│   │   ├── extract.py       # LLM entity extraction
-│   │   └── query.py          # Hybrid retrieval + adaptive expansion + synthesis
-│   │
-│   │   # Utilities
-│   │   └── types.py        # Pydantic types (Chunk, Entity, Relationship, etc.)
+│   └── test_config.py
 │
 ├── data/
 │   ├── domain_schema.yaml   # Configurable entity/relationship types
@@ -299,17 +314,22 @@ graph_vlm_rag/
 | Step | Files | Goal | Status |
 |------|-------|------|--------|
 | **1** | `docker-compose.yml`, `config.py`, `.env.example` | Verify all services reachable | ✅ |
-| **2** | `docling.py`, `vision_enrich.py`, `eye.py` | PDF → reasoned.md | ✅ |
-| **3** | `chunker.py`, `qdrant_store.py` (dense) | Parent/child chunking → Qdrant | ✅ |
-| **4** | `extract.py`, `neo4j_store.py`, `domain_schema.yaml` | Entities/edges → Neo4j | ✅ |
-| **5** | `cypher_safety.py`, `cypher_generator.py` | DSPy Cypher generation | ✅ |
-| **6** | `query.py` | Full query flow with hybrid + expansion | ✅ |
-| **7** | `ingest.py`, `__main__.py` | CLI surface with `--clear` | ✅ |
-| **8** | `eval_questions.json`, `eval.py` | Smoke test | ✅ |
+| **2** | `ingestion/docling.py`, `vision_enrich.py`, `eye.py` | PDF → reasoned.md | ✅ |
+| **3** | `storage/chunker.py`, `qdrant_store.py` (dense) | Parent/child chunking → Qdrant | ✅ |
+| **4** | `reasoning/extract.py`, `storage/neo4j_store.py`, `domain_schema.yaml` | Entities/edges → Neo4j | ✅ |
+| **5** | `reasoning/cypher_safety.py`, `cypher_generator.py` | DSPy Cypher generation | ✅ |
+| **6** | `cli/query.py` | Full query flow with hybrid + expansion | ✅ |
+| **7** | `cli/ingest.py`, `__main__.py` | CLI surface with `--clear` | ✅ |
+| **8** | `data/eval_questions.json`, `cli/eval.py` | Smoke test | ✅ |
 | **9** | Layout-aware chunking | Docling HybridChunker for parents | ✅ |
 | **10** | Hybrid search (dense + BM25) | RRF fusion in Qdrant | ✅ |
 | **11** | Multi-document support | `--document` filter, MERGE dedup | ✅ |
 | **12** | Adaptive context expansion | ±2 neighbors on insufficient answer | ✅ |
+| **13** | `src/` layout restructure | Industry-standard Python packaging | ✅ |
+| **14** | `cli/` subpackage | Separate CLI from core logic | ✅ |
+| **15** | `clear` command | Selective store clearing | ✅ |
+| **16** | `tests/` directory | Unit test scaffolding | ✅ |
+| **17** | `parents.json` clear on `--clear` | Bug fix: stale parent cleanup | ✅ |
 
 ---
 
@@ -374,16 +394,5 @@ These are "later consideration" items. Ship the pipeline first, harden later.
 - **Entity extraction limited to first 10 parents** to keep ingest time reasonable.
 - **Cypher generation is hit-or-miss.** The LLM occasionally references labels that weren't extracted. Vector search provides a reliable fallback.
 
----
-
-## 12. Related Artifacts
-
-- **POCs:**
-  - `POCs/vlm-pdf-extraction/` — Eye layer source
-  - `POCs/graph-rag/` — Memory/Brain source
-- **Related work:**
-  - `multi-modal-hybrid-rag/graphvrag/` — A brownfield refactor of this project (different architecture). Stale as of 2026-06-05. Reference for patterns/logging if you decide to harden.
-
----
 
 *Last updated: 2026-06-10 — v1.1 with hybrid search, layout-aware chunking, and adaptive expansion.*
