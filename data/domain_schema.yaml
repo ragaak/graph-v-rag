@@ -1,0 +1,69 @@
+# Domain Schema: Research Paper / Academic
+#
+# This schema is tuned for extracting entities from research papers,
+# technical reports, and academic documents.
+
+# Entity types commonly found in research papers
+entity_labels:
+  # People & Organizations
+  - Author
+  - Researcher
+  - Institution
+  - Lab
+  - Company
+
+  # Content Types
+  - Paper
+  - Dataset
+  - Model
+  - Method
+  - Framework
+
+  # Technical
+  - Architecture
+  - Technique
+  - Metric
+  - Benchmark
+  - Framework
+
+  # Domain
+  - Task
+  - Dataset
+  - Component
+  - Loss
+  - Activation
+
+# Relationship types in research papers
+relationship_types:
+  # Authorship
+  - AUTHORED_BY
+  - AFFILIATED_WITH
+
+  # Technical
+  - USES
+  - EXTENDS
+  - IMPROVES_ON
+  - REPLACES
+  - COMPARES_TO
+  - BASED_ON
+
+  # Dependencies
+  - DEPENDS_ON
+  - REQUIRES
+
+  # Paper relationships
+  - PUBLISHED_IN
+  - CITES
+
+  # Technical relationships
+  - PROVIDES
+  - ACHIEVES
+  - OUTPERFORMS
+  - TRAINED_ON
+
+# Example Cypher queries for research papers
+cypher_examples:
+  - "MATCH (a:Author)<-[:AUTHORED_BY]-(p:Paper) RETURN p.title, a.name LIMIT 10"
+  - "MATCH (m:Model)-[:DEPENDS_ON]->(d:Dataset) RETURN m.name, d.name LIMIT 10"
+  - "MATCH (p:Paper)-[:OUTPERFORMS]->(other:Paper) RETURN p.title, other.title LIMIT 10"
+  - "MATCH (m:Model)-[:USES]->(t:Technique) RETURN m.name, t.name LIMIT 10"

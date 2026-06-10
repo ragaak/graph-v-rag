@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+*.log
+
+# Data (cached/processed - regenerateable)
+data/parents.json
+data/processed/*.md
+# Keep sample PDFs that are test assets
+# data/raw_pdfs/*.pdf  # Uncomment if you want to ignore all PDFs
+
+# Docker
+docker-compose.override.yml
+
+# Node (if any)
+node_modules/
+package-lock.json

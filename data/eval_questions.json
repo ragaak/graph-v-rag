@@ -1,0 +1,47 @@
+[
+  {
+    "question": "What is this paper about?",
+    "expected_keywords": ["paper", "title", "about"],
+    "expected_answer_contains": null
+  },
+  {
+    "question": "Why does simply inserting OCR-extracted text directly into language model prompts underperform compared to full-resolution OCR-free methods?",
+    "expected_keywords": ["crucial visual context", "optimal performance", "increase latency and computational costs"],
+    "expected_answer_contains": null
+  },
+  {
+    "question": "How does DocVLM's query compression mechanism process the OCR data before it is fed into the LLM?",
+    "expected_keywords": ["64", "learned queries", "visual features"],
+    "expected_answer_contains": null
+  },
+  {
+    "question": "Which three baseline Vision-Language Models (VLMs) was DocVLM integrated with for evaluation?",
+    "expected_keywords": ["InternVL2", "LLaVA-OneVision", "DocVLM"],
+    "expected_answer_contains": null
+  },
+  {
+    "question": "What are the two distinct stages in DocVLM's training strategy?",
+    "expected_keywords": ["OCR-LLM Alignment", "Vision Alignment"],
+    "expected_answer_contains": null
+  },
+  {
+    "question": "According to the state-of-the-art comparison table, what ANLS score does DocVLM combined with  (576 tokens) achieve on the DocVQA benchmark?",
+    "expected_keywords": ["92.8"],
+    "expected_answer_contains": null
+  },
+  {
+    "question": "In the multipage document extension, what is the difference in token usage between the \"Global Encoding\" strategy and the \"Page-wise Encoding\" strategy?",
+    "expected_keywords": ["64 tokens per document", "64 tokens per page"],
+    "expected_answer_contains": null
+  },
+  {
+    "question": "How does the performance of DocVLM using the global encoding strategy compare to the specialized GRAM model on the MP-DocVQA dataset?",
+    "expected_keywords": ["86.3%", "80.3%", "outperforms"],
+    "expected_answer_contains": null
+  },
+  {
+    "question": "Where was this paper published?",
+    "expected_keywords": ["CVPR", "conference", "published", "IEEE"],
+    "expected_answer_contains": null
+  }
+]
