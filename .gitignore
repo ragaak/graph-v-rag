@@ -51,3 +51,6 @@ docker-compose.override.yml
 # Node (if any)
 node_modules/
 package-lock.json
+
+# graphify outputs
+graphify-out/
